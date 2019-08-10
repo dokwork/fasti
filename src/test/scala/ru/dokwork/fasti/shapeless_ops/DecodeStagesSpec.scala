@@ -9,28 +9,28 @@ import shapeless.{ :+:, CNil, _ }
 import scala.util.Try
 
 class DecodeStagesSpec extends FreeSpec with Matchers {
-  implicit val intDecode: Decode[String, Int] = (x: String) => Try(x.toInt)
-  implicit val doubleDecode: Decode[String, Double] = (x: String) => Try(x.toDouble)
-  implicit val boolDecode: Decode[String, Boolean] = (x: String) => Try(x.toBoolean)
+  implicit val intDecode: Decode[Int, String] = (x: String) => Try(x.toInt)
+  implicit val doubleDecode: Decode[Double, String] = (x: String) => Try(x.toDouble)
+  implicit val boolDecode: Decode[Boolean, String] = (x: String) => Try(x.toBoolean)
 
   "derivation" - {
     "should not derive decoder for CNil" in {
-      illTyped("implicitly[DecodeStages[String, CNil]]")
+      illTyped("implicitly[DecodeStages[CNil, String]]")
     }
     "should not derive decoder if coproduct contains type without decoder" in {
-      illTyped("implicitly[DecodeStages[String, Symbol :+: CNil]]")
+      illTyped("implicitly[DecodeStages[Symbol :+: CNil, String]]")
     }
     "should derive decoder for single element coproduct" in {
-      implicitly[DecodeStages[String, Int :+: CNil]]
+      implicitly[DecodeStages[Int :+: CNil, String]]
     }
     "should derive decoder for arbitrary coproduct" in {
-      implicitly[DecodeStages[String, Int :+: Double :+: Boolean :+: CNil]]
+      implicitly[DecodeStages[Int :+: Double :+: Boolean :+: CNil, String]]
     }
   }
 
   "decode" - {
     type C = Int :+: Double :+: Boolean :+: CNil
-    val decoder = implicitly[DecodeStages[String, C]]
+    val decoder = implicitly[DecodeStages[C, String]]
 
     def c = new Coproduct.MkCoproduct[C]
 

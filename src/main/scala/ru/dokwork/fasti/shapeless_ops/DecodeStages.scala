@@ -5,35 +5,35 @@ import shapeless._
 
 import scala.util.{ Failure, Try }
 
-trait Decode[Enc, Dec] {
-  def decode(x: Enc): Try[Dec]
+trait Decode[A, Encoded] {
+  def decode(x: Encoded): Try[A]
 }
 
-trait DecodeStages[Enc, C <: Coproduct]{
-  def decode(stages: NonEmptyList[Enc]): Try[NonEmptyList[C]]
+trait DecodeStages[C <: Coproduct, Encoded]{
+  def decode(stages: NonEmptyList[Encoded]): Try[NonEmptyList[C]]
 }
 
 object DecodeStages {
 
-  implicit def single[Enc, H](
+  implicit def single[H, Encoded](
     implicit
-    decoder: Decode[Enc, H]
-  ): DecodeStages[Enc, H :+: CNil] = new DecodeStages[Enc, H :+: CNil] {
+    decoder: Decode[H, Encoded]
+  ): DecodeStages[H :+: CNil, Encoded] = new DecodeStages[H :+: CNil, Encoded] {
     type P = H :: HNil
 
-    override def decode(stages: NonEmptyList[Enc]): Try[NonEmptyList[H :+: CNil]] = stages match {
+    override def decode(stages: NonEmptyList[Encoded]): Try[NonEmptyList[H :+: CNil]] = stages match {
       case NonEmptyList(x, Nil) => decoder.decode(x).map(h ⇒ NonEmptyList.one(Inl(h)))
       case NonEmptyList(_, t) ⇒ Failure(new IllegalArgumentException(s"Unexpected elements $t."))
     }
   }
 
-  implicit def every[Enc, H, TC <: Coproduct](
+  implicit def every[H, TC <: Coproduct, Encoded](
     implicit
-    headDecoder: Decode[Enc, H],
-    tailDecoder: DecodeStages[Enc, TC]
-  ): DecodeStages[Enc, H :+: TC] = new DecodeStages[Enc, H :+: TC] {
+    headDecoder: Decode[H, Encoded],
+    tailDecoder: DecodeStages[TC, Encoded]
+  ): DecodeStages[H :+: TC, Encoded] = new DecodeStages[H :+: TC, Encoded] {
 
-    override def decode(stages: NonEmptyList[Enc]): Try[NonEmptyList[H :+: TC]] =
+    override def decode(stages: NonEmptyList[Encoded]): Try[NonEmptyList[H :+: TC]] =
       stages match {
         case NonEmptyList(x, Nil) =>
           headDecoder.decode(x).map(h ⇒ NonEmptyList.one(Inl(h)))

@@ -22,7 +22,8 @@ before_cache:
   - rm -f $HOME/.ivy2/.sbt.ivy.lock
 
 jdk:
-  - oraclejdk8
+  - openjdk8
+  - openjdk11
 
 script:
   - sbt clean coverage test coverageReport

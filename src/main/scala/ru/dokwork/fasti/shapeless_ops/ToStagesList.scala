@@ -12,11 +12,11 @@ object ToStagesList {
   def apply[C <: Coproduct, P <: HList](p: P)(implicit instance: ToStagesList[C, P]): NonEmptyList[C] =
     instance.toList(p)
 
-  implicit def single[H, TC <: Coproduct]: ToStagesList[H :+: TC, H :: HNil] =
-    (p: H :: HNil) ⇒ NonEmptyList.one(Inl(p.head))
+  implicit def single[H, H1 <: H, TC <: Coproduct]: ToStagesList[H :+: TC, H1 :: HNil] =
+    (p: H1 :: HNil) ⇒ NonEmptyList.one(Inl(p.head))
 
-  implicit def every[H, TC <: Coproduct, TP <: HList](
+  implicit def every[H, H1 <: H, TC <: Coproduct, TP <: HList](
     implicit t: ToStagesList[TC, TP]
-  ): ToStagesList[H :+: TC, H :: TP] =
-    (p: H :: TP) ⇒ NonEmptyList.one(Inl(p.head)) ::: t.toList(p.tail).map(Inr.apply)
+  ): ToStagesList[H :+: TC, H1 :: TP] =
+    (p: H1 :: TP) ⇒ NonEmptyList.one(Inl(p.head)) ::: t.toList(p.tail).map(Inr.apply)
 }

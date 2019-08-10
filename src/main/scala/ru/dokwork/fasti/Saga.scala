@@ -67,7 +67,7 @@ final class Saga[F[_], A, B, S <: Coproduct] private(
         compensate(Right(head), cause).flatMap {
           case Right(_) if tail.nonEmpty => loop(tail)
           case Right(_) => F.pure(Result.Rolledback(cause))
-          case Left(e) => F.raiseError(UnhandledException(head, e))
+          case Left(e) => F.raiseError(RollbackFailed(head, e))
         }
       case Nil => F.pure(Result.Rolledback(cause))
     }

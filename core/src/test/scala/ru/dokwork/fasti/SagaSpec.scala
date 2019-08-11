@@ -10,8 +10,6 @@ import scala.util.Try
 
 class SagaSpec extends FreeSpec {
 
-  import Fixture.all._
-
   "Saga" - {
     "should invoke `action` function and return result" in new Fixture {
       // given:

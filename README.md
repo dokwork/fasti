@@ -10,4 +10,4 @@ plans of official and religiously sanctioned events.
 
 
 ## More about
-- Complete specification of the `Saga` [here](src/test/scala/ru/dokwork/fasti/SagaSpec.scala).
+- Complete specification of the `Saga` [here](core/src/test/scala/ru/dokwork/fasti/SagaSpec.scala).

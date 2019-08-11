@@ -3,6 +3,11 @@ package ru.dokwork.fasti.shapeless_ops
 import cats.data.NonEmptyList
 import shapeless.{ ::, _ }
 
+import scala.annotation.implicitNotFound
+
+@implicitNotFound(
+  "The list of stages [${P}] can't be applied to the saga with stages [${C}]. " +
+    "List must contain stages with the same order as saga.")
 trait ToStagesList[C <: Coproduct, P <: HList] {
   def toList(p: P): NonEmptyList[C]
 }

@@ -3,13 +3,17 @@ package ru.dokwork.fasti.shapeless_ops
 import cats.data.NonEmptyList
 import shapeless._
 
+import scala.annotation.implicitNotFound
 import scala.util.{ Failure, Try }
 
 trait Decode[A, Encoded] {
   def decode(x: Encoded): Try[A]
 }
 
-trait DecodeStages[C <: Coproduct, Encoded]{
+@implicitNotFound(
+  "Stages [${C}] can't be decoded from the list of ${Encoded}. " +
+    "Be sure that you have instance of the Decode[?, ${Encoded}] for the every stages from the Coproduct[${C}].")
+trait DecodeStages[C <: Coproduct, Encoded] {
   def decode(stages: NonEmptyList[Encoded]): Try[NonEmptyList[C]]
 }
 

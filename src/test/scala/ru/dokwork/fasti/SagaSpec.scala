@@ -1,11 +1,9 @@
 package ru.dokwork.fasti
 
-import cats.data.NonEmptyList
 import cats.implicits._
 import org.scalatest.FreeSpec
 import org.scalatest.Matchers.{ a ⇒ _, _ }
 import org.scalatest.TryValues._
-import ru.dokwork.fasti.shapeless_ops.Decode
 import shapeless.{ :+:, CNil, HNil }
 
 import scala.collection.mutable.ListBuffer
@@ -47,26 +45,6 @@ class SagaSpec extends FreeSpec {
         result.success.value shouldBe Success(c)
         completedStages should contain only c // because we omit first step
       }
-
-      "should continue from the list" in new Fixture {
-        // given:
-        implicit val strDecode: Decode[B, String] = _ => Try(b)
-        val saga = Saga(action[A, B], compensate[B]) andThen Saga(action[B, C], compensate[C])
-        // when:
-        val result = saga.continue(NonEmptyList.of("b"))
-        // then:
-        result.success.value shouldBe Success(c)
-        completedStages should contain only c // because we omit first step
-      }
-      "should return exception in the context of F" in new Fixture {
-        // given:
-        implicit val strDecode: Decode[B, String] = _ => Failure(testException)
-        val saga = Saga(action[A, B], compensate[B]) andThen Saga(action[B, C], compensate[C])
-        // when:
-        val result = saga.continue(NonEmptyList.of("b"))
-        // then:
-        result.failure.exception shouldBe testException
-      }
     }
 
     "rollback" - {
@@ -87,26 +65,6 @@ class SagaSpec extends FreeSpec {
         result.success.value shouldBe Rolledback(testException)
         completedStages shouldBe empty
         compensatedStages should contain(b)
-      }
-      "should compensate first step" in new Fixture {
-        // give:
-        implicit val strDecode: Decode[B, String] = _ => Try(b)
-        val saga = Saga(action[A, B], compensate[B]) andThen Saga(action[B, C], compensate[C])
-        // when:
-        val result = saga.rollback(NonEmptyList.of("b"), testException)
-        // then:
-        result.success.value shouldBe Rolledback(testException)
-        completedStages shouldBe empty
-        compensatedStages should contain(b)
-      }
-      "should return exception in the context of `F` when decode failed" in new Fixture {
-        // give:
-        implicit val strDecode: Decode[B, String] = _ => Failure(testException)
-        val saga = Saga(action[A, B], compensate[B]) andThen Saga(action[B, C], compensate[C])
-        // when:
-        val result = saga.rollback(NonEmptyList.of("b"), exceptionOnRollback)
-        // then:
-        result.failure.exception shouldBe testException
       }
       "should return `RollbackFailed` in the context of `F` when rollback failed" in new Fixture {
         // given:

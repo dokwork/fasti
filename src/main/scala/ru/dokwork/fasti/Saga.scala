@@ -1,13 +1,10 @@
 package ru.dokwork.fasti
 
 import cats.MonadError
-import cats.data.NonEmptyList
 import cats.implicits._
 import ru.dokwork.fasti.Saga.Result
 import ru.dokwork.fasti.shapeless_ops._
-import shapeless.{ :+:, CNil, Coproduct, HList }
-
-import scala.util.{ Failure, Success }
+import shapeless.{ :+:, CNil, Coproduct }
 
 final class Saga[F[_], A, B, S <: Coproduct] private(
   private val run: Forward[F, A, B, S],
@@ -17,38 +14,13 @@ final class Saga[F[_], A, B, S <: Coproduct] private(
 
   def apply(x: A): F[Result[B]] = continue0(List.empty, run(Left(x)))
 
-  def continue[Encoded](completedStages: NonEmptyList[Encoded])(
+  def continue[P](completedStages: P)(
     implicit
-    decoder: DecodeStages[S, Encoded]
+    ev: ToList[P, S]
   ): F[Result[B]] = {
-    decoder.decode(completedStages) match {
-      case Success(stages) ⇒ continue0(stages.init, run(Right(stages.last)))
-      case Failure(err) ⇒ F.raiseError(err)
-    }
-  }
-
-  def continue[P <: HList](completedStages: P)(
-    implicit
-    toSL: ToStagesList[S, P]
-  ): F[Result[B]] = {
-    val done = toSL.toList(completedStages)
+    val done = ev.toList(completedStages)
     continue0(done.init, run(Right(done.last)))
   }
-
-  def rollback[Encoded](completedStages: NonEmptyList[Encoded], reason: Throwable)(
-    implicit
-    decoder: DecodeStages[S, Encoded]
-  ): F[Result.Rolledback[B]] = {
-    decoder.decode(completedStages) match {
-      case Success(stages) ⇒ rollback0(stages.toList, reason)
-      case Failure(err) ⇒ F.raiseError(err)
-    }
-  }
-
-  def rollback[P <: HList](completedStages: P, reason: Throwable)(
-    implicit
-    toSL: ToStagesList[S, P]
-  ): F[Result.Rolledback[B]] = rollback0(toSL.toList(completedStages).toList, reason)
 
   private def continue0(done: List[S], result: F[run.Result]): F[Result[B]] =
     F.flatMap(result) {
@@ -58,6 +30,11 @@ final class Saga[F[_], A, B, S <: Coproduct] private(
       case (handled, Left(err)) =>
         F.map(rollback0(done ++ handled, err))(identity[Result[B]])
     }
+
+  def rollback[P](completedStages: P, reason: Throwable)(
+    implicit
+    ev: ToList[P, S]
+  ): F[Result.Rolledback[B]] = rollback0(ev.toList(completedStages).toList, reason)
 
   private def rollback0(stages: List[S], cause: Throwable): F[Result.Rolledback[B]] = {
     import scala.collection.immutable.::
@@ -90,7 +67,9 @@ object Saga {
   sealed trait Result[T]
 
   object Result {
+
     case class Success[T](result: T) extends Result[T]
+
     case class Rolledback[T](cause: Throwable) extends Result[T]
   }
 

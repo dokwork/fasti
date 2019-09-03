@@ -1,57 +1,74 @@
 package ru.dokwork.fasti
 
-import cats.{ Monad, MonadError }
+import cats.MonadError
 import cats.implicits._
-import ru.dokwork.fasti.shapeless_ops.Join
-import shapeless.{ :+:, CNil, Coproduct, Inl, Inr }
+import shapeless._
+import shapeless.ops.hlist.{ Prepend, Reverse }
 
-trait Forward[F[_], A, B, C <: Coproduct] extends (Either[A, C] => F[(List[C], Either[Throwable, B])]) {
-  first =>
+import scala.language.implicitConversions
 
-  type Result = (List[C], Either[Throwable, B])
+sealed trait UntypedForward[F[_], B]
 
-  def andThen[D, C1 <: Coproduct](other: Forward[F, B, D, C1])(
-      implicit
-      F: Monad[F],
-      join: Join[C, B :+: C1]
-  ): Forward[F, A, D, join.Out] = new Forward[F, A, D, join.Out] {
-
-    override def apply(x: Either[A, join.Out]): F[Result] = {
-      def continue(res1: first.Result): F[Result]= res1 match {
-        case (list, Left(e)) => F.pure(list.map(l => join.left(l)) -> Left(e))
-        case (list, Right(b)) =>
-          F.map(apply(Right(join.right(Inl(b))))) {
-            case (list2, res) => (list.map(l=> join.left(l)) ++ list2) -> res
-          }
-      }
-
-      def toResult(res2: other.Result): Result = res2 match {
-        case (list, res) => list.map(c1 => join.right(Inr(c1))) -> res
-      }
-      def addB(b: B)(res: Result): Result = res match {
-        case (list, r) => (join.right(Inl(b)) +: list) -> r
-      }
-
-      x match {
-        case Left(a) => first(Left(a)).flatMap(res1 => continue(res1))
-        case Right(out) =>
-          join.separate(out) match {
-            case Left(c) => first(Right(c)).flatMap(res1 => continue(res1))
-            case Right(Inl(b)) => other(Left(b)).map(res2 => addB(b)(toResult(res2)))
-            case Right(Inr(c1)) => other(Right(c1)).map(res2 => toResult(res2))
-          }
-      }
-    }
-  }
-}
+sealed trait Forward[F[_], A, B, S <: HList] extends UntypedForward[F, B]
 
 object Forward {
 
-  def apply[F[_], A, B](f: A => F[B])(implicit F: MonadError[F, Throwable]): Forward[F, A, B, CNil] =
-    new Forward[F, A, B, CNil] {
-      override def apply(x: Either[A, CNil]): F[Result] = x match {
-        case Left(a)     => F.map(f(a).attempt)(List.empty -> _)
-        case Right(cnil) => cnil.impossible
-      }
+  trait ForwardOps[F[_], A, B, S <: HList] {
+    def self: Forward[F, A, B, S]
+
+    def apply[P <: HList](a: A)(implicit F: MonadError[F, Throwable]): F[Either[(HList, Throwable), B]] =
+      Forward.execute(HNil)(self, a :: HNil).asInstanceOf[F[Either[(HList, Throwable), B]]]
+
+    def continue[P <: HList](p: P)(implicit F: MonadError[F, Throwable], ev: BeginFrom[S, P], rev: Reverse[P]): F[Either[(HList, Throwable), B]] = {
+      require(ev ne null)
+      Forward.execute(rev(p))(self, skipped :: p).asInstanceOf[F[Either[(HList, Throwable), B]]]
     }
+
+    def andThen[C, S2 <: HList](other: Forward[F, B, C, S2])(implicit ev: Prepend[S, B :: S2]): Forward[F, A, C, ev.Out] = {
+      require(ev ne null)
+      Forward.andThen(self, other).asInstanceOf[Forward[F, A, C, ev.Out]]
+    }
+  }
+
+  implicit def syntax[F[_], A, B, S <: HList](f: Forward[F, A, B, S]): ForwardOps[F, A, B, S] =
+    new ForwardOps[F, A, B, S] {
+      override def self: Forward[F, A, B, S] = f
+    }
+
+  private object skipped
+
+  private case class Run[F[_], A, B](run: Any ⇒ F[B]) extends Forward[F, A, B, HNil]
+
+  private case class Next[F[_], A, B, C, S <: HList](first: Run[F, A, B], next: UntypedForward[F, C]) extends Forward[F, A, C, B :: S]
+
+  def apply[F[_], A, B](f: A ⇒ F[B]): Forward[F, A, B, HNil] = Run[F, A, B](f.asInstanceOf[Any ⇒ F[B]])
+
+  // in case of exception returned hlist will be reversed
+  private def execute[F[_], B](completed: HList)(f0: UntypedForward[F, B], p0: HList)(
+    implicit F: MonadError[F, Throwable]
+  ): F[Either[(HList, Throwable), _]] = {
+
+    def attempt(f: F[_]): F[Either[(HList, Throwable), _]] = f.attempt.map {
+      case Left(cause) ⇒ Left(completed → cause)
+      case Right(b) ⇒ Right(b)
+    }
+
+    (f0, p0) match {
+      case (Run(run), x :: HNil) ⇒ attempt(run(x))
+      case (Next(Run(run), f2), x :: HNil) ⇒
+        attempt(run(x)).flatMap {
+          case Right(y) ⇒ execute(y :: completed)(f2, y :: HNil)
+          case l ⇒ F.pure(l)
+        }
+      case (Next(_, f2), _ :: p2) ⇒ execute(completed)(f2, p2)
+      case (_, p) ⇒ F.raiseError(new IllegalArgumentException(s"Unexpected part of the list $p"))
+    }
+  }
+
+
+  private def andThen[F[_]](f1: UntypedForward[F, _], f2: UntypedForward[F, _]): UntypedForward[F, _] = f1 match {
+    case r @ Run(_) ⇒ Next(r, f2)
+    case Next(r, n) ⇒ Next(r, andThen(n, f2))
+  }
 }
+

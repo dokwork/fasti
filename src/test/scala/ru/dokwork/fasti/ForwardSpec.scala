@@ -1,14 +1,14 @@
 package ru.dokwork.fasti
 
 import cats.implicits._
-import org.scalatest.EitherValues._
 import org.scalatest.{ FreeSpec, Matchers }
-import shapeless.{ :+:, CNil, Coproduct }
+import shapeless._
 
-import scala.util.Try
-import scala.util.control.NoStackTrace
+import scala.util.{ Failure, Success, Try }
 
 class ForwardSpec extends FreeSpec with Matchers {
+
+  import Forward.syntax
 
   type A = Int
   type B = Long
@@ -16,37 +16,40 @@ class ForwardSpec extends FreeSpec with Matchers {
   type D = Boolean
   type E = String
 
-  def c = new Coproduct.MkCoproduct[B :+: C :+: D :+: CNil]
+  val fab: Forward[Try, A, B, HNil] = Forward(x ⇒ Try(x.toLong))
+  val fbc: Forward[Try, B, C, HNil] = Forward(x ⇒ Try(x.toDouble))
+  val fac: Forward[Try, A, C, B :: HNil] = fab andThen fbc
+  val fcd: Forward[Try, C, D, HNil] = Forward(x ⇒ Try(x > 0))
+  val fde: Forward[Try, D, E, HNil] = Forward(x ⇒ Try(x.toString))
+  val fce: Forward[Try, C, E, D :: HNil] = fcd andThen fde
+  val fae: Forward[Try, A, E, B :: C :: D :: HNil] = fac andThen fce
 
-  implicit class RichResult(res: Try[(List[B :+: C :+: D :+: CNil], Either[Throwable, E])]) {
-    def right = res.get._2.right.value
-
-    def left = res.get._2.left.value
-
-    def list = res.get._1
-  }
-
-  val testException = new Exception("Test") with NoStackTrace
-
-  val fab = Forward((x: Int) ⇒ Try(x.toLong))
-  val fbc = Forward((x: Long) ⇒ Try(x.toDouble))
-  val fcd = Forward((x: Double) ⇒ Try(x > 0.0))
-  val fde = Forward((x: Boolean) ⇒ Try(if (x) x.toString else throw testException))
-
-  val forward = fab andThen fbc andThen fcd andThen fde
-
-  "should return list with every next completed stages" in {
-    forward(Left(42)).list shouldBe List(c(42L), c(42.0), c(true))
-    forward(Right(c(42L))).list shouldBe List(c(42L), c(42.0), c(true))
-    forward(Right(c(42.0))).list shouldBe List(c(42.0), c(true))
-    forward(Right(c(true))).list shouldBe List(c(true))
-  }
-
-  "should return result as right" in {
-    forward(Left(42)).right shouldBe "true"
-  }
-
-  "should return exception as left" in {
-    forward(Left(-42)).left shouldBe testException
+  "Forward" - {
+    "on success" - {
+      val f = fae
+      "should successfully return expected result" in {
+        f(1) shouldBe Success(Right("true"))
+      }
+      "should return the same result as on apply" in {
+        f.continue(1L :: HNil) shouldBe f(1)
+        f.continue(1L :: 1.0 :: HNil) shouldBe f(1)
+        f.continue(1L :: 1.0 :: HNil) shouldBe f(1)
+        f.continue(1L :: 1.0 :: true :: HNil) shouldBe f(1)
+      }
+    }
+    "on fail" - {
+      val testException = new Exception("Test")
+      val f = fae andThen Forward[Try, E, Any](_ ⇒ Failure(testException))
+      "should return list of the completed states with exception" in {
+        f(1) shouldBe Success(Left(("true" :: true :: 1.0 :: 1L :: HNil) → testException))
+      }
+      "should return the same result as on apply" in {
+        f.continue(1L :: HNil) shouldBe f(1)
+        f.continue(1L :: 1.0 :: HNil) shouldBe f(1)
+        f.continue(1L :: 1.0 :: HNil) shouldBe f(1)
+        f.continue(1L :: 1.0 :: true :: HNil) shouldBe f(1)
+        f.continue(1L :: 1.0 :: true :: "true" :: HNil) shouldBe f(1)
+      }
+    }
   }
 }

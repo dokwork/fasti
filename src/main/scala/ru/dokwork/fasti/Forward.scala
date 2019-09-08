@@ -3,7 +3,7 @@ package ru.dokwork.fasti
 import cats.MonadError
 import cats.implicits._
 import shapeless._
-import shapeless.ops.hlist.{ Prepend, Reverse }
+import shapeless.ops.hlist.Prepend
 
 import scala.language.implicitConversions
 
@@ -19,9 +19,13 @@ object Forward {
     def apply[P <: HList](a: A)(implicit F: MonadError[F, Throwable]): F[Either[(HList, Throwable), B]] =
       Forward.execute(HNil)(self, a :: HNil).asInstanceOf[F[Either[(HList, Throwable), B]]]
 
-    def continue[P <: HList](p: P)(implicit F: MonadError[F, Throwable], ev: BeginFrom[S, P], rev: Reverse[P]): F[Either[(HList, Throwable), B]] = {
+    def continue[P <: HList](p: P)(implicit F: MonadError[F, Throwable], ev: BeginFrom[S, P]): F[Either[(HList, Throwable), B]] = {
       require(ev ne null)
-      Forward.execute(rev(p))(self, skipped :: p).asInstanceOf[F[Either[(HList, Throwable), B]]]
+      def rev(acc: HList): PartialFunction[HList, HList] = {
+        case x :: tail ⇒ rev(x :: acc)(tail)
+        case HNil ⇒ acc
+      }
+      Forward.execute(rev(HNil)(p))(self, skipped :: p).asInstanceOf[F[Either[(HList, Throwable), B]]]
     }
 
     def andThen[C, S2 <: HList](other: Forward[F, B, C, S2])(implicit ev: Prepend[S, B :: S2]): Forward[F, A, C, ev.Out] = {
@@ -64,7 +68,6 @@ object Forward {
       case (_, p) ⇒ F.raiseError(new IllegalArgumentException(s"Unexpected part of the list $p"))
     }
   }
-
 
   private def andThen[F[_]](f1: UntypedForward[F, _], f2: UntypedForward[F, _]): UntypedForward[F, _] = f1 match {
     case r @ Run(_) ⇒ Next(r, f2)

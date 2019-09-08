@@ -16,7 +16,7 @@ object Backward {
   trait BackwardOps[F[_]] {
     def self: Backward[F]
 
-    def apply[P <: HList](p: P, cause: Throwable)(implicit F: MonadError[F, Throwable]): F[Unit] = {
+    def apply(p: HList, cause: Throwable)(implicit F: MonadError[F, Throwable]): F[Unit] = {
       val b = skip(size(self) - hsize(p))(self)
       Backward.execute(b, p, cause)
     }

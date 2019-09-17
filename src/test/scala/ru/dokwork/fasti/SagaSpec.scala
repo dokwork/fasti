@@ -32,7 +32,7 @@ class SagaSpec extends FreeSpec {
       completedStages should contain allOf(b, c)
     }
 
-    "continue" - {
+    "when continue" - {
       "should continue from the product" in new Fixture {
         // given:
         val saga: Saga[Try, A, C, B :: HNil] = Saga(action[A, B], compensate[B]) andThen Saga(action[B, C], compensate[C])
@@ -44,7 +44,7 @@ class SagaSpec extends FreeSpec {
       }
     }
 
-    "rollback" - {
+    "when compensate" - {
       "should return `Left` with a reason" in new Fixture {
         // given:
         val saga = Saga(fail[A, B])
@@ -63,7 +63,7 @@ class SagaSpec extends FreeSpec {
         completedStages shouldBe empty
         compensatedStages should contain(b)
       }
-      "should return `RollbackFailed` in the context of `F` when rollback failed" in new Fixture {
+      "should return `CompensationFailed` in the context of `F`" in new Fixture {
         // given:
         val saga = Saga(action[A, B], failCompensation[B]) andThen Saga(action[B, C])
         // when:
@@ -71,7 +71,7 @@ class SagaSpec extends FreeSpec {
         // then:
         result.failure.exception shouldBe an[CompensationFailed]
       }
-      "should invoke both compensation actions on rollback" in new Fixture {
+      "should invoke both compensation actions" in new Fixture {
         // given:
         val saga =
           Saga(action[A, B], compensate[B]) andThen Saga(action[B, C], compensate[C]) andThen Saga(fail[C, Any])
@@ -90,6 +90,42 @@ class SagaSpec extends FreeSpec {
         // then:
         result.success.value shouldBe Left(testException)
         completedStages shouldBe empty
+        compensatedStages shouldBe empty
+      }
+    }
+
+    "with break on" - {
+      "should not invoke compensation on the exceptionOnCompensation at the second step" in new Fixture {
+        // given:
+        val saga = Saga(action[A, B], compensate) andThen Saga(action[B, C], failCompensation).breakOn {
+          case `exceptionOnCompensation` ⇒
+        }
+        // when:
+        val result = saga(a)
+        // then:
+        result shouldBe 'failure
+        compensatedStages shouldBe empty
+      }
+      "should invoke compensation on the exceptionOnCompensation at the second step" in new Fixture {
+        // given:
+        val saga = Saga(action[A, B], compensate).breakOn {
+          case `exceptionOnCompensation` ⇒
+        } andThen Saga(action[B, C], failCompensation)
+        // when:
+        val result = saga(a)
+        // then:
+        result shouldBe 'success
+        compensatedStages should contain only b
+      }
+      "should not invoke compensation on the exceptionOnCompensation at any step" in new Fixture {
+        // given:
+        val saga = (Saga(action[A, B], compensate) andThen Saga(action[B, C], failCompensation)).breakOn {
+          case `exceptionOnCompensation` ⇒
+        }
+        // when:
+        val result = saga(a)
+        // then:
+        result shouldBe 'failure
         compensatedStages shouldBe empty
       }
     }

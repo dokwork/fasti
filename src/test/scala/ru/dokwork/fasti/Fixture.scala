@@ -34,7 +34,7 @@ object Fixture {
   }
 
   trait Exceptions {
-    val exceptionOnCompensation = TestException("exceptionOnRollback")
+    val exceptionOnCompensation = TestException("exceptionOnCompensation")
     val testException = TestException("testException")
   }
 
@@ -68,7 +68,7 @@ trait Fixture {
     }
   }
 
-  /** Always returns `Failure` with `exceptionOnRollback` */
+  /** Always returns `Failure` with `exceptionOnCompensation` */
   def failCompensation[B]: (B, Throwable) => Try[Unit] = (_, _) => Failure(exceptionOnCompensation)
 
   /** Always returns `Failure` with `testException` */

@@ -95,10 +95,10 @@ class SagaSpec extends FreeSpec {
     }
 
     "with break on" - {
-      "should not invoke compensation on the exceptionOnCompensation at the second step" in new Fixture {
+      "should not invoke compensation on the testException at the second step" in new Fixture {
         // given:
-        val saga = Saga(action[A, B], compensate) andThen Saga(action[B, C], failCompensation).breakOn {
-          case `exceptionOnCompensation` ⇒
+        val saga = Saga(action[A, B], compensate) andThen Saga(fail[B, C]).breakOn {
+          case `testException` ⇒
         }
         // when:
         val result = saga(a)
@@ -106,26 +106,31 @@ class SagaSpec extends FreeSpec {
         result shouldBe 'failure
         compensatedStages shouldBe empty
       }
-      "should invoke compensation on the exceptionOnCompensation at the second step" in new Fixture {
+      "should invoke compensation on the testException at the second step" in new Fixture {
         // given:
         val saga = Saga(action[A, B], compensate).breakOn {
-          case `exceptionOnCompensation` ⇒
-        } andThen Saga(action[B, C], failCompensation)
+          case `testException` ⇒
+        } andThen Saga(fail[B, C])
         // when:
         val result = saga(a)
         // then:
         result shouldBe 'success
         compensatedStages should contain only b
       }
-      "should not invoke compensation on the exceptionOnCompensation at any step" in new Fixture {
+      "should not invoke compensation on the testException at any step" in new Fixture {
         // given:
-        val saga = (Saga(action[A, B], compensate) andThen Saga(action[B, C], failCompensation)).breakOn {
-          case `exceptionOnCompensation` ⇒
+        val saga1 = (Saga(action[A, B], compensate) andThen Saga(action[B, C], compensate) andThen Saga(fail[C, D])).breakOn {
+          case `testException` ⇒
+        }
+        val saga2 = (Saga(action[A, B], compensate) andThen Saga(fail[B, C]) andThen Saga(action[C, D], compensate)).breakOn {
+          case `testException` ⇒
         }
         // when:
-        val result = saga(a)
+        val result1 = saga1(a)
+        val result2 = saga2(a)
         // then:
-        result shouldBe 'failure
+        result1 shouldBe result2
+        result1 shouldBe 'failure
         compensatedStages shouldBe empty
       }
     }

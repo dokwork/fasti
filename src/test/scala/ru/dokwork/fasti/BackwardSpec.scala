@@ -9,7 +9,7 @@ import scala.util.{ Failure, Try }
 
 class BackwardSpec extends FreeSpec {
 
-  import Backward.syntax
+  import Backward._
   import Fixture.all._
 
   "Backward" - {

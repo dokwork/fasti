@@ -8,7 +8,7 @@ import scala.util.{ Failure, Success, Try }
 
 class ForwardSpec extends FreeSpec with Matchers {
 
-  import Forward.syntax
+  import Forward._
 
   type A = Int
   type B = Long
@@ -16,11 +16,11 @@ class ForwardSpec extends FreeSpec with Matchers {
   type D = Boolean
   type E = String
 
-  val fab: Forward[Try, A, B, HNil] = Forward(x ⇒ Try(x.toLong))
-  val fbc: Forward[Try, B, C, HNil] = Forward(x ⇒ Try(x.toDouble))
+  val fab: Forward[Try, A, B, HNil] = Forward((x: A) ⇒ Try(x.toLong))
+  val fbc: Forward[Try, B, C, HNil] = Forward((x: B) ⇒ Try(x.toDouble))
   val fac: Forward[Try, A, C, B :: HNil] = fab andThen fbc
-  val fcd: Forward[Try, C, D, HNil] = Forward(x ⇒ Try(x > 0))
-  val fde: Forward[Try, D, E, HNil] = Forward(x ⇒ Try(x.toString))
+  val fcd: Forward[Try, C, D, HNil] = Forward((x: C) ⇒ Try(x > 0))
+  val fde: Forward[Try, D, E, HNil] = Forward((x: D) ⇒ Try(x.toString))
   val fce: Forward[Try, C, E, D :: HNil] = fcd andThen fde
   val fae: Forward[Try, A, E, B :: C :: D :: HNil] = fac andThen fce
 

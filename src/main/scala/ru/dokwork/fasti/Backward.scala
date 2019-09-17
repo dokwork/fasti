@@ -4,18 +4,14 @@ import cats.MonadError
 import cats.implicits._
 import shapeless._
 
-import scala.language.implicitConversions
+private[fasti] sealed trait Backward[F[_]]
 
-sealed trait Backward[F[_]]
-
-object Backward {
+private[fasti] object Backward {
 
   def apply[F[_], B](f: (B, Throwable) ⇒ F[Unit]): Backward[F] =
     Run[F, B](f.asInstanceOf[(Any, Throwable) ⇒ F[Unit]])
 
-  trait BackwardOps[F[_]] {
-    def self: Backward[F]
-
+  implicit final class BackwardOps[F[_]](val self: Backward[F]) {
     def apply(p: HList, cause: Throwable)(implicit F: MonadError[F, Throwable]): F[Unit] = {
       val b = skip(size(self) - hsize(p))(self)
       Backward.execute(b, p, cause)
@@ -23,11 +19,6 @@ object Backward {
 
     def compose(other: Backward[F]): Backward[F] = Backward.compose(self, other)
   }
-
-  implicit def syntax[F[_]](b: Backward[F]): BackwardOps[F] =
-    new BackwardOps[F] {
-      override def self: Backward[F] = b
-    }
 
   private case class Run[F[_], B](f: (Any, Throwable) ⇒ F[Unit]) extends Backward[F]
 

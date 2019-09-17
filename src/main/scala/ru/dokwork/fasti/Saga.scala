@@ -8,7 +8,6 @@ import shapeless.{ ::, HList, HNil }
 final class Saga[F[_], A, B, S <: HList] private(
   private val run: Forward[F, A, B, S],
   private val compensation: Backward[F],
-  private val isFatal: PartialFunction[Throwable, Unit] = PartialFunction.empty
 )(implicit F: MonadError[F, Throwable]) extends (A ⇒ F[Either[Throwable, B]]) {
 
   override def apply(x: A): F[Either[Throwable, B]] = run(x).flatMap(handleFail)
@@ -37,7 +36,7 @@ final class Saga[F[_], A, B, S <: HList] private(
   }
 
   def breakOn(isFatal: PartialFunction[Throwable, Unit]): Saga[F, A, B, S] =
-    new Saga(run, compensation, isFatal)
+    new Saga(run.breakOn(isFatal), compensation)
 
   private def raiseCompensationFailed[T]: Throwable ⇒ F[T] =
     e ⇒ F.raiseError(CompensationFailed(e))

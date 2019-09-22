@@ -1,22 +1,27 @@
-target/
-boot/
-lib_managed/
-src_managed/
-project/plugins/project/
-/.idea/
-/project/target/
-/src/main/g8/target/
-/project/project/
-
 *.class
 *.log
 
 # sbt specific
 .cache
+.cache-main
+.cache-tests
 .history
 .lib/
 dist/*
+target/
+lib_managed/
+src_managed/
 project/boot/
+project/plugins/project/
+
+.idea/
+.vscode/
+
+# Eclipse specific
+.project
+.classpath
+.prefs
+.settings
 
 # Scala-IDE specific
 .scala_dependencies
@@ -25,4 +30,7 @@ project/boot/
 # ENSIME specific
 .ensime_cache/
 .ensime
-/src/main/g8/project/target/
+
+# Metals
+.metals/
+metals.sbt

@@ -10,7 +10,6 @@ import scala.util.{ Failure, Try }
 class BackwardSpec extends FreeSpec {
 
   import Backward._
-  import Fixture.all._
 
   "Backward" - {
     "should successfully return result" in new Fixture with TryValues {

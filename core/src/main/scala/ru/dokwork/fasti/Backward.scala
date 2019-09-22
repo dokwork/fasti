@@ -9,7 +9,7 @@ private[fasti] sealed trait Backward[F[_]]
 private[fasti] object Backward {
 
   def apply[F[_], B](f: (B, Throwable) ⇒ F[Unit]): Backward[F] =
-    Run[F, B](f.asInstanceOf[(Any, Throwable) ⇒ F[Unit]])
+    Run[F](f.asInstanceOf[(Any, Throwable) ⇒ F[Unit]])
 
   implicit final class BackwardOps[F[_]](val self: Backward[F]) {
     def apply(p: HList, cause: Throwable)(implicit F: MonadError[F, Throwable]): F[Unit] = {
@@ -20,9 +20,9 @@ private[fasti] object Backward {
     def compose(other: Backward[F]): Backward[F] = Backward.compose(self, other)
   }
 
-  private case class Run[F[_], B](f: (Any, Throwable) ⇒ F[Unit]) extends Backward[F]
+  private case class Run[F[_]](f: (Any, Throwable) ⇒ F[Unit]) extends Backward[F]
 
-  private case class Next[F[_], S <: HList, C](f: Run[F, C], next: Backward[F]) extends Backward[F]
+  private case class Next[F[_]](f: Backward[F], next: Backward[F]) extends Backward[F]
 
   // p0 should be reversed
   private def execute[F[_]](b: Backward[F], p0: HList, cause: Throwable)(implicit F: MonadError[F, Throwable]): F[Unit] = {

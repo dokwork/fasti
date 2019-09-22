@@ -2,7 +2,8 @@ package ru.dokwork.fasti.example
 
 import cats.MonadError
 import cats.implicits._
-import io.circe.{ Encoder, Json }
+import io.circe
+import io.circe.Json
 import io.circe.generic.JsonCodec
 import ru.dokwork.fasti.Saga
 import ru.dokwork.fasti.persistence._
@@ -24,50 +25,44 @@ object MarketSaga {
   @JsonCodec
   case class DeliveryOrdered(orderId: OrderId, deliveryId: DeliveryId)
 
-  case class Done(orderId: OrderId) extends Result
+  case class Done(orderId: OrderId)
 
-  implicit def encode[A: Encoder]: Encoder[A, Json] = a ⇒ Encoder[A].apply(a)
-
-  implicit val lensDeferredOrder: Lens[DeferredOrder, OrderId] = ???
-  implicit val lensCreditReserved: Lens[CreditReserved, OrderId] = ???
-  implicit val lensItemFound: Lens[ItemFound, OrderId] = ???
-  implicit val lensDeliveryOrdered: Lens[DeliveryOrdered, OrderId] = ???
-  implicit val lensDone: Lens[Done, OrderId] = ???
+  implicit def encode[A: circe.Encoder]: Encoder[A, Json] = a ⇒ circe.Encoder[A].apply(a)
 
   type States = DeferredOrder :: CreditReserved :: ItemFound :: DeliveryOrdered :: HNil
 
-  def apply[F[_] : MonadError[?[_], Throwable] : SagaPersistence[?[_], Json, OrderId]](
+  def apply[F[_] : MonadError[*[_], Throwable] : SagaPersistence[*[_], Json, OrderId]](
     orderService: OrderService[F],
     billingService: BillingService[F],
     storeService: StoreService[F],
     deliveryService: DeliveryService[F]
-  ): Saga[F, MakeOrderArgs, Done, States] = {
+  ): CompletedPersistedSaga[F, MakeOrderArgs, Done, States, OrderId, Json] = {
 
-    val createOrder = PersistedSaga(
+    val createOrder = PersistedSaga[OrderId, Json](
       (args: MakeOrderArgs) ⇒ orderService.createOrder(args.item).map(DeferredOrder(_, args.item)),
       (order: DeferredOrder, cause: Throwable) ⇒ orderService.markAsFailed(order.orderId, cause)
-    )
+    )(_.orderId)
 
-    val reserveCredit = PersistedSaga(
+    val reserveCredit = PersistedSaga[OrderId, Json](
       (order: DeferredOrder) ⇒ billingService.reserveCredit(order.item.price).map(CreditReserved(order.orderId, _, order.item)),
       (credit: CreditReserved, _: Throwable) ⇒ billingService.returnCredit(credit.id)
-    )
+    )(_.orderId)
 
-    val findItem = PersistedSaga(
+    val findItem = PersistedSaga[OrderId, Json](
       (credit: CreditReserved) ⇒ storeService.findItem(credit.item).map(ItemFound(credit.orderId, _, credit.item)),
       (item: ItemFound, _: Throwable) ⇒ storeService.revertItem(item.code)
-    )
+    )(_.orderId)
 
-    val orderDelivery = PersistedSaga(
+    val orderDelivery = PersistedSaga[OrderId, Json](
       (item: ItemFound) ⇒ deliveryService.orderDelivery(item.item).map(DeliveryOrdered(item.orderId, _)),
       (deliveryOrder: DeliveryOrdered, _: Throwable) ⇒ deliveryService.cancelOrder(deliveryOrder.deliveryId)
-    )
+    )(_.orderId)
 
-    val completeOrder = PersistedSaga(
+    val completeOrder = Saga(
       (deliveryOrdered: DeliveryOrdered) ⇒ orderService.markAsCompleted(deliveryOrdered.orderId).as(Done(deliveryOrdered.orderId))
     )
 
-    createOrder andThen reserveCredit andThen findItem andThen orderDelivery andThen completeOrder
+    createOrder andThen reserveCredit andThen findItem andThen orderDelivery completeOn completeOrder
   }
 }
 

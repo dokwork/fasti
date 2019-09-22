@@ -5,9 +5,18 @@
 
 ![](fasti.gif) 
 
-In ancient Rome, the *fasti* were chronological or calendar-based lists, or other diachronic records or 
-plans of official and religiously sanctioned events.
+_In ancient Rome, the **fasti** were chronological or calendar-based lists, or other diachronic records or 
+plans of official and religiously sanctioned events._
 
+## About
+The main idea of this project is to separate the implementation of Sagas pattern and the implementation of their persistence to give more ability to make different variants of persistence. 
+
+`Core` project contains an implementation of the saga which can be easily described, invoked and in case of any exception - compensated.
+
+`Persistence` project contains one of a possible implementation of the persistence.
+
+An example of the persisted saga is described in the `example` project.
 
 ## More about
-- Complete specification of the `Saga` [here](core/src/test/scala/ru/dokwork/fasti/SagaSpec.scala).
+- Complete specification of the `Saga` [here](core/src/test/scala/ru/dokwork/fasti/SagaSpec.scala)
+- Example of the persisted saga [here](example/README.md)

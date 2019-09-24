@@ -6,14 +6,14 @@ import shapeless.ops.hlist.Prepend
 import shapeless.{ ::, HList, HNil }
 
 final class Saga[F[_], A, B, S <: HList] private(
-  private val run: Forward[F, A, B, S],
+  private val action: Forward[F, A, B, S],
   private val compensation: Backward[F],
 )(implicit F: MonadError[F, Throwable]) extends (A => F[Either[Throwable, B]]) {
 
-  override def apply(x: A): F[Either[Throwable, B]] = run(x).flatMap(handleFail)
+  override def apply(x: A): F[Either[Throwable, B]] = action(x).flatMap(handleFail)
 
   def continue[P <: HList](p: P)(implicit ev: S BeginFrom P): F[Either[Throwable, B]] =
-    run.continue(p).flatMap(handleFail)
+    action.continue(p).flatMap(handleFail)
 
   private def handleFail(result: Either[(HList, Throwable), B]): F[Either[Throwable, B]] = result match {
     case Right(b) =>
@@ -30,13 +30,13 @@ final class Saga[F[_], A, B, S <: HList] private(
   def andThen[S2 <: HList, D](other: Saga[F, B, D, S2])(implicit ev: Prepend[S, B :: S2]): Saga[F, A, D, ev.Out] = {
     require(ev ne null)
     new Saga[F, A, D, ev.Out](
-      run andThen other.run,
+      action andThen other.action,
       compensation compose other.compensation
     )
   }
 
   def breakOn(isFatal: PartialFunction[Throwable, Unit]): Saga[F, A, B, S] =
-    new Saga(run.breakOn(isFatal), compensation)
+    new Saga(action.breakOn(isFatal), compensation)
 
   private def raiseCompensationFailed[T]: Throwable => F[T] =
     e => F.raiseError(CompensationFailed(e))

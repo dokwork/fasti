@@ -4,14 +4,6 @@ lazy val `fasti` = (project in file("."))
     coverageMinimum := 90,
     coverageFailOnMinimum := true
   )
-  .aggregate(`fasti-core`, `fasti-persistence`)
-
-lazy val `fasti-core` = (project in file("core"))
-  .settings(commonSettings: _*)
-
-lazy val `fasti-persistence` = (project in file("persistence"))
-  .settings(commonSettings: _*)
-  .dependsOn(`fasti-core` % "test->test;compile->compile")
 
 lazy val `example` = (project in file("example"))
   .settings(commonSettings: _*)
@@ -23,7 +15,7 @@ lazy val `example` = (project in file("example"))
     ),
     addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full)
   )
-  .dependsOn(`fasti`, `fasti-persistence`)
+  .dependsOn(`fasti`)
 
 def commonSettings = Seq(
   organization := "ru.dokwork",

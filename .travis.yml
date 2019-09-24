@@ -21,7 +21,7 @@ jdk:
   - openjdk11
 
 script:
-  - sbt clean coverage test coverageReport coverageAggregate
+  - sbt clean coverage test coverageReport
 
 after_success:
   - sbt coveralls

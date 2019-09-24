@@ -27,7 +27,7 @@ object BuyingItemSaga {
 
   case class Done(orderId: OrderId)
 
-  implicit def encode[A: circe.Encoder]: Encoder[A, Json] = a ⇒ circe.Encoder[A].apply(a)
+  implicit def encode[A: circe.Encoder]: Encoder[A, Json] = a => circe.Encoder[A].apply(a)
 
   type States = DeferredOrder :: CreditReserved :: ItemFound :: DeliveryOrdered :: HNil
 
@@ -41,28 +41,28 @@ object BuyingItemSaga {
     type Step[A, B] = PersistedSaga[F, A, B, HNil, OrderId, Json]
 
     val createOrder: Step[BuyItem, DeferredOrder] = PersistedSaga(
-      (args: BuyItem) ⇒ orderService.createOrder(args.item).map(DeferredOrder(_, args.item)),
-      (order: DeferredOrder, cause: Throwable) ⇒ orderService.markAsFailed(order.orderId, cause)
+      (args: BuyItem) => orderService.createOrder(args.item).map(DeferredOrder(_, args.item)),
+      (order: DeferredOrder, cause: Throwable) => orderService.markAsFailed(order.orderId, cause)
     )(_.orderId)
 
     val reserveCredit: Step[DeferredOrder, CreditReserved] = PersistedSaga(
-      (order: DeferredOrder) ⇒
+      (order: DeferredOrder) =>
         billingService.reserveCredit(order.item.price).map(CreditReserved(order.orderId, _, order.item)),
-      (credit: CreditReserved, _: Throwable) ⇒ billingService.returnCredit(credit.id)
+      (credit: CreditReserved, _: Throwable) => billingService.returnCredit(credit.id)
     )(_.orderId)
 
     val findItem: Step[CreditReserved, ItemFound] = PersistedSaga(
-      (credit: CreditReserved) ⇒ storeService.findItem(credit.item).map(ItemFound(credit.orderId, _, credit.item)),
-      (item: ItemFound, _: Throwable) ⇒ storeService.revertItem(item.code)
+      (credit: CreditReserved) => storeService.findItem(credit.item).map(ItemFound(credit.orderId, _, credit.item)),
+      (item: ItemFound, _: Throwable) => storeService.revertItem(item.code)
     )(_.orderId)
 
     val orderDelivery: Step[ItemFound, DeliveryOrdered] = PersistedSaga(
-      (item: ItemFound) ⇒ deliveryService.orderDelivery(item.item).map(DeliveryOrdered(item.orderId, _)),
-      (deliveryOrder: DeliveryOrdered, _: Throwable) ⇒ deliveryService.cancelOrder(deliveryOrder.deliveryId)
+      (item: ItemFound) => deliveryService.orderDelivery(item.item).map(DeliveryOrdered(item.orderId, _)),
+      (deliveryOrder: DeliveryOrdered, _: Throwable) => deliveryService.cancelOrder(deliveryOrder.deliveryId)
     )(_.orderId)
 
     val completeOrder = Saga(
-      (deliveryOrdered: DeliveryOrdered) ⇒
+      (deliveryOrdered: DeliveryOrdered) =>
         orderService.markAsCompleted(deliveryOrdered.orderId).as(Done(deliveryOrdered.orderId))
     )
 

@@ -8,7 +8,7 @@ import shapeless.{ ::, HList, HNil }
 final class Saga[F[_], A, B, S <: HList] private(
   private val run: Forward[F, A, B, S],
   private val compensation: Backward[F],
-)(implicit F: MonadError[F, Throwable]) extends (A ⇒ F[Either[Throwable, B]]) {
+)(implicit F: MonadError[F, Throwable]) extends (A => F[Either[Throwable, B]]) {
 
   override def apply(x: A): F[Either[Throwable, B]] = run(x).flatMap(handleFail)
 
@@ -16,9 +16,9 @@ final class Saga[F[_], A, B, S <: HList] private(
     run.continue(p).flatMap(handleFail)
 
   private def handleFail(result: Either[(HList, Throwable), B]): F[Either[Throwable, B]] = result match {
-    case Right(b) ⇒
+    case Right(b) =>
       F.pure(Right(b))
-    case Left((states, cause)) ⇒
+    case Left((states, cause)) =>
       compensation(states, cause) as Either.left[Throwable, B](cause) handleErrorWith raiseCompensationFailed
   }
 
@@ -38,20 +38,20 @@ final class Saga[F[_], A, B, S <: HList] private(
   def breakOn(isFatal: PartialFunction[Throwable, Unit]): Saga[F, A, B, S] =
     new Saga(run.breakOn(isFatal), compensation)
 
-  private def raiseCompensationFailed[T]: Throwable ⇒ F[T] =
-    e ⇒ F.raiseError(CompensationFailed(e))
+  private def raiseCompensationFailed[T]: Throwable => F[T] =
+    e => F.raiseError(CompensationFailed(e))
 
   private def rev(acc: HList): PartialFunction[HList, HList] = {
-    case x :: tail ⇒ rev(x :: acc)(tail)
-    case HNil ⇒ acc
+    case x :: tail => rev(x :: acc)(tail)
+    case HNil => acc
   }
 }
 
 object Saga {
 
-  def apply[F[_], A, B](action: A ⇒ F[B], compensate: (B, Throwable) ⇒ F[Unit])(implicit F: MonadError[F, Throwable]): Saga[F, A, B, HNil] =
+  def apply[F[_], A, B](action: A => F[B], compensate: (B, Throwable) => F[Unit])(implicit F: MonadError[F, Throwable]): Saga[F, A, B, HNil] =
     new Saga[F, A, B, HNil](Forward(action), Backward(compensate))
 
-  def apply[F[_], A, B](action: A ⇒ F[B])(implicit F: MonadError[F, Throwable]): Saga[F, A, B, HNil] =
-    apply(action, (_, _) ⇒ F.unit)
+  def apply[F[_], A, B](action: A => F[B])(implicit F: MonadError[F, Throwable]): Saga[F, A, B, HNil] =
+    apply(action, (_, _) => F.unit)
 }

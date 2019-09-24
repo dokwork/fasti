@@ -42,14 +42,14 @@ trait Fixture extends Instances with Exceptions {
   val compensatedStages: ListBuffer[Char] = ListBuffer.empty
 
   /** Always puts instance of the `Out` to the `completedStages`. */
-  def action[In <: Char, Out <: Char : Instance]: In ⇒ Try[Out] = _ ⇒ {
+  def action[In <: Char, Out <: Char : Instance]: In => Try[Out] = _ => {
     val b = Instance[Out].get
     completedStages += b
     Try(b)
   }
 
   /** Always removes instance of the `B` from the `completedStages`. */
-  def compensate[T <: Char]: (T, Throwable) ⇒ Try[Unit] = new Function2[T, Throwable, Try[Unit]] {
+  def compensate[T <: Char]: (T, Throwable) => Try[Unit] = new Function2[T, Throwable, Try[Unit]] {
     override def apply(b: T, e: Throwable): Try[Unit] = Try {
       completedStages -= b
       compensatedStages += b

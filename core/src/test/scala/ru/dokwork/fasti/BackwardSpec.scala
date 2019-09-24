@@ -1,7 +1,7 @@
 package ru.dokwork.fasti
 
 import cats.implicits._
-import org.scalatest.Matchers.{ a ⇒ _, _ }
+import org.scalatest.Matchers.{ a => _, _ }
 import org.scalatest.{ FreeSpec, TryValues }
 import shapeless._
 

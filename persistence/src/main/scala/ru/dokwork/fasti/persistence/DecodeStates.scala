@@ -23,8 +23,8 @@ object DecodeStates {
     type P = H :: HNil
 
     override def decode(stages: NonEmptyList[Encoded]): Try[(P, BeginFrom[H :: HNil, P])] = stages match {
-      case NonEmptyList(x, Nil) => decoder.decode(x).map(h ⇒ (h :: HNil, BeginFrom.single[H, HNil]))
-      case NonEmptyList(_, t) ⇒ Failure(new IllegalArgumentException(s"Unexpected elements $t."))
+      case NonEmptyList(x, Nil) => decoder.decode(x).map(h => (h :: HNil, BeginFrom.single[H, HNil]))
+      case NonEmptyList(_, t) => Failure(new IllegalArgumentException(s"Unexpected elements $t."))
     }
   }
 

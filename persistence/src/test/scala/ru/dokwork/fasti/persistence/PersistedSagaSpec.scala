@@ -2,7 +2,7 @@ package ru.dokwork.fasti.persistence
 
 import cats.implicits._
 import org.scalatest.FreeSpec
-import org.scalatest.Matchers.{ a ⇒ _, _ }
+import org.scalatest.Matchers.{ a => _, _ }
 import org.scalatest.TryValues._
 import ru.dokwork.fasti.Saga
 import shapeless.{ ::, HNil }
@@ -11,10 +11,10 @@ import scala.util.Try
 
 class PersistedSagaSpec extends FreeSpec {
 
-  trait TestSaga { self: Fixture ⇒
+  trait TestSaga { self: Fixture =>
     val saga: CompletedPersistedSaga[Try, A, D, B :: C :: HNil, Int, Encoded] =
-      PersistedSaga[Int, Encoded](action[A, B], compensate[B])(_ ⇒ defaultId) andThen
-        PersistedSaga[Int, Encoded](action[B, C], compensate[C])(_ ⇒ defaultId) completeOn Saga(action[C, D])
+      PersistedSaga[Int, Encoded](action[A, B], compensate[B])(_ => defaultId) andThen
+        PersistedSaga[Int, Encoded](action[B, C], compensate[C])(_ => defaultId) completeOn Saga(action[C, D])
   }
 
   "PersistedSaga" - {

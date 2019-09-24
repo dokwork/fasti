@@ -2,7 +2,7 @@ package ru.dokwork.fasti
 
 import cats.implicits._
 import org.scalatest.FreeSpec
-import org.scalatest.Matchers.{ a ⇒ _, _ }
+import org.scalatest.Matchers.{ a => _, _ }
 import org.scalatest.TryValues._
 import shapeless._
 
@@ -96,7 +96,7 @@ class SagaSpec extends FreeSpec {
       "should not invoke compensation on the testException at the second step" in new Fixture {
         // given:
         val saga = Saga(action[A, B], compensate) andThen Saga(fail[B, C]).breakOn {
-          case `testException` ⇒
+          case `testException` =>
         }
         // when:
         val result = saga(a)
@@ -107,7 +107,7 @@ class SagaSpec extends FreeSpec {
       "should invoke compensation on the testException at the second step" in new Fixture {
         // given:
         val saga = Saga(action[A, B], compensate).breakOn {
-          case `testException` ⇒
+          case `testException` =>
         } andThen Saga(fail[B, C])
         // when:
         val result = saga(a)
@@ -118,10 +118,10 @@ class SagaSpec extends FreeSpec {
       "should not invoke compensation on the testException at any step" in new Fixture {
         // given:
         val saga1 = (Saga(action[A, B], compensate) andThen Saga(action[B, C], compensate) andThen Saga(fail[C, D])).breakOn {
-          case `testException` ⇒
+          case `testException` =>
         }
         val saga2 = (Saga(action[A, B], compensate) andThen Saga(fail[B, C]) andThen Saga(action[C, D], compensate)).breakOn {
-          case `testException` ⇒
+          case `testException` =>
         }
         // when:
         val result1 = saga1(a)

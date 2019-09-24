@@ -14,13 +14,13 @@ trait Fixture extends ru.dokwork.fasti.Fixture {
   implicit def encoderC: Encoder[C, Encoded] = (x: C) => x.toString
 
   implicit def decoderB: Decoder[B, Encoded] = {
-    case "b" ⇒ Success(b)
-    case x   ⇒ Failure(new IllegalArgumentException(s"$x"))
+    case "b" => Success(b)
+    case x   => Failure(new IllegalArgumentException(s"$x"))
   }
 
   implicit def decoderC: Decoder[C, Encoded] = {
-    case "c" ⇒ Success(c)
-    case x   ⇒ Failure(new IllegalArgumentException(s"$x"))
+    case "c" => Success(c)
+    case x   => Failure(new IllegalArgumentException(s"$x"))
   }
 
   val defaultId: Int = 1

@@ -12,13 +12,13 @@ class Persistence[F[_]](store: ConcurrentHashMap[OrderId, (List[Json], Option[Th
 ) extends SagaPersistence[F, Json, OrderId] {
 
   override def persist(id: OrderId, state: Json): F[Unit] =
-    F.pure(store.compute(id, (_, v) ⇒ {
+    F.pure(store.compute(id, (_, v) => {
       val (list, cause) = Option(v).getOrElse(List.empty → None)
       (list :+ state) → cause
     }))
 
   override def lastCompensated(id: OrderId, cause: Throwable): F[Unit] =
-    F.pure(store.computeIfPresent(id, (_, v) ⇒ {
+    F.pure(store.computeIfPresent(id, (_, v) => {
       val (list, _) = v
       list.tail → Some(cause)
     }))
@@ -28,7 +28,7 @@ class Persistence[F[_]](store: ConcurrentHashMap[OrderId, (List[Json], Option[Th
 
   override def load(id: OrderId): F[(NonEmptyList[Json], Option[Throwable])] =
     store.get(id) match {
-      case (x :: xs, error) ⇒ F.pure(NonEmptyList.of(x, xs: _*) -> error)
-      case _ ⇒ F.raiseError(new IllegalStateException(s"States for $id was not found"))
+      case (x :: xs, error) => F.pure(NonEmptyList.of(x, xs: _*) -> error)
+      case _ => F.raiseError(new IllegalStateException(s"States for $id was not found"))
     }
 }

@@ -1,3 +1,5 @@
+import sbtrelease.ReleaseStateTransformations._
+
 lazy val `fasti` = (project in file("."))
   .settings(commonSettings: _*)
   .settings(
@@ -15,6 +17,7 @@ lazy val `example` = (project in file("example"))
       "io.circe" %% "circe-generic" % "0.11.1",
       "org.typelevel" %% "cats-effect" % "1.3.1"
     ),
+    skip in publish := true,
     addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full)
   )
   .dependsOn(`fasti`)
@@ -46,4 +49,20 @@ def commonSettings = Seq(
     // tests:
     "org.scalatest" %% "scalatest" % "3.0.0" % "test"
   )
+)
+
+releaseProcess := Seq[ReleaseStep](
+  checkSnapshotDependencies,
+  inquireVersions,
+  runClean,
+  runTest,
+  setReleaseVersion,
+  commitReleaseVersion,
+  updateReadme,
+  commitReadme,
+  tagRelease,
+  releaseStepCommandAndRemaining("publish"),
+  setNextVersion,
+  commitNextVersion,
+  pushChanges
 )

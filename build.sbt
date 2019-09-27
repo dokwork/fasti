@@ -1,6 +1,8 @@
 lazy val `fasti` = (project in file("."))
   .settings(commonSettings: _*)
   .settings(
+    licenses += ("MIT", url("http://opensource.org/licenses/MIT")),
+    releaseReadmeFile := Some(baseDirectory.value / "README.md"),
     coverageMinimum := 90,
     coverageFailOnMinimum := true
   )

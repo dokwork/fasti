@@ -16,7 +16,7 @@ persistence to give more ability to make different variants of persistence.
 An example of the persisted saga is described in the `example` project.
 
 ## More about
-- Complete specification of the `Saga` [here](core/src/test/scala/ru/dokwork/fasti/SagaSpec.scala)
+- Complete specification of the `Saga` [here](src/test/scala/ru/dokwork/fasti/SagaSpec.scala)
 - Example of the persisted saga [here](example/README.md)
 
 ## How to try

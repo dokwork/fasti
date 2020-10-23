@@ -1,14 +1,14 @@
 package ru.dokwork.fasti
 
 import cats.implicits._
-import org.scalatest.FreeSpec
-import org.scalatest.Matchers.{ a => _, _ }
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers.{ a => _, _ }
 import org.scalatest.TryValues._
 import shapeless._
 
-import scala.util.Try
+import scala.util._
 
-class SagaSpec extends FreeSpec {
+class SagaSpec extends AnyFreeSpec  {
 
   "Saga" - {
     "should invoke `action` function and return result" in new Fixture {
@@ -27,7 +27,7 @@ class SagaSpec extends FreeSpec {
       val result = saga(a)
       // then:
       result.success.value shouldBe Right(c)
-      completedStages should contain allOf(b, c)
+      completedStages.should(contain.allOf(b, c))
     }
 
     "when continue" - {
@@ -101,7 +101,7 @@ class SagaSpec extends FreeSpec {
         // when:
         val result = saga(a)
         // then:
-        result shouldBe 'failure
+        result shouldBe an[Failure[Unit]]
         compensatedStages shouldBe empty
       }
       "should invoke compensation on the testException at the second step" in new Fixture {
@@ -112,7 +112,7 @@ class SagaSpec extends FreeSpec {
         // when:
         val result = saga(a)
         // then:
-        result shouldBe 'success
+        result shouldBe an[Success[Unit]]
         compensatedStages should contain only b
       }
       "should not invoke compensation on the testException at any step" in new Fixture {
@@ -128,7 +128,7 @@ class SagaSpec extends FreeSpec {
         val result2 = saga2(a)
         // then:
         result1 shouldBe result2
-        result1 shouldBe 'failure
+        result1 shouldBe an[Failure[Unit]]
         compensatedStages shouldBe empty
       }
     }

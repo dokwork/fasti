@@ -53,6 +53,6 @@ class TestSagaPersistence extends SagaPersistence[Try, String, Int] {
   }
 
   override def load(id: Int): Try[(NonEmptyList[String], Option[Throwable])] = Try {
-    NonEmptyList.fromListUnsafe(storage.toList) → error
+    NonEmptyList.fromListUnsafe(storage.toList) -> error
   }
 }

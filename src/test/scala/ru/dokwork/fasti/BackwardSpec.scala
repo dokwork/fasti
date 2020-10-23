@@ -1,13 +1,14 @@
 package ru.dokwork.fasti
 
 import cats.implicits._
-import org.scalatest.Matchers.{ a => _, _ }
-import org.scalatest.{ FreeSpec, TryValues }
+import org.scalatest.freespec.AnyFreeSpec
 import shapeless._
 
-import scala.util.{ Failure, Try }
+import scala.util._
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.TryValues
 
-class BackwardSpec extends FreeSpec {
+class BackwardSpec extends AnyFreeSpec with Matchers {
 
   import Backward._
 
@@ -15,18 +16,22 @@ class BackwardSpec extends FreeSpec {
     "should successfully return result" in new Fixture with TryValues {
       // given:
       val backward: Backward[Try] =
-        Backward(compensate[A]) compose Backward(compensate[B]) compose Backward(compensate[C]) compose Backward(compensate[D])
+        Backward(compensate[A]) compose Backward(compensate[B]) compose Backward(compensate[C]) compose Backward(
+          compensate[D]
+        )
 
       // when:
       val result = backward(c :: b :: a :: HNil, testException)
 
       // then:
-      result shouldBe 'success
+      result shouldBe an[Success[Unit]]
     }
     "should invoke functions in the correct order" in new Fixture {
       // given:
       val backward: Backward[Try] =
-        Backward(compensate[A]) compose Backward(compensate[B]) compose Backward(compensate[C]) compose Backward(compensate[D])
+        Backward(compensate[A]) compose Backward(compensate[B]) compose Backward(compensate[C]) compose Backward(
+          compensate[D]
+        )
 
       // when:
       backward(c :: b :: a :: HNil, testException)

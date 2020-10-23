@@ -1,12 +1,12 @@
 package ru.dokwork.fasti
 
 import cats.implicits._
-import org.scalatest.{ FreeSpec, Matchers }
 import shapeless._
+import scala.util._
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 
-import scala.util.{ Failure, Success, Try }
-
-class ForwardSpec extends FreeSpec with Matchers {
+class ForwardSpec extends AnyFreeSpec with Matchers {
 
   import Forward._
 
@@ -41,7 +41,7 @@ class ForwardSpec extends FreeSpec with Matchers {
       val testException = new Exception("Test")
       val f = fae andThen Forward[Try, E, Any](_ => Failure(testException))
       "should return list of the completed states with exception" in {
-        f(1) shouldBe Success(Left(("true" :: true :: 1.0 :: 1L :: HNil) → testException))
+        f(1) shouldBe Success(Left(("true" :: true :: 1.0 :: 1L :: HNil) -> testException))
       }
       "should return the same result as on apply" in {
         f.continue(1L :: HNil) shouldBe f(1)

@@ -21,5 +21,5 @@ An example of the persisted saga is described in the `example` project.
 
 ## How to try
 ```scala
-libraryDependencies += "ru.dokwork" %% "fasti" % "0.1.0"
+libraryDependencies += "ru.dokwork" %% "fasti" % "0.2.0"
 ```

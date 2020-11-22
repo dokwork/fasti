@@ -1,20 +1,20 @@
 package ru.dokwork.fasti.persistence
 
 import cats.implicits._
-import org.scalatest.FreeSpec
-import org.scalatest.Matchers.{ a => _, _ }
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers.{ a => _, _ }
 import org.scalatest.TryValues._
 import ru.dokwork.fasti.Saga
 import shapeless.{ ::, HNil }
 
-import scala.util.Try
+import scala.util._
 
-class PersistedSagaSpec extends FreeSpec {
+class PersistedSagaSpec extends AnyFreeSpec {
 
   trait TestSaga { self: Fixture =>
     val saga: CompletedPersistedSaga[Try, A, D, B :: C :: HNil, Int, Encoded] =
-      PersistedSaga[Int, Encoded](action[A, B], compensate[B])(_ => defaultId) andThen
-        PersistedSaga[Int, Encoded](action[B, C], compensate[C])(_ => defaultId) completeOn Saga(action[C, D])
+      PersistedSaga.create[Int, Encoded](action[A, B], compensate[B])(_ => defaultId) andThen
+        PersistedSaga.create[Int, Encoded](action[B, C], compensate[C])(_ => defaultId) completeOn Saga(action[C, D])
   }
 
   "PersistedSaga" - {
@@ -56,7 +56,7 @@ class PersistedSagaSpec extends FreeSpec {
         val result = saga.restore(defaultId)
 
         // then:
-        result shouldBe 'failure
+        result shouldBe an[Failure[Unit]]
         completedStages shouldBe empty
         compensatedStages shouldBe empty
       }
@@ -68,7 +68,7 @@ class PersistedSagaSpec extends FreeSpec {
         val result = saga.restore(defaultId)
 
         // then:
-        result shouldBe 'failure
+        result shouldBe  an[Failure[Unit]]
         completedStages shouldBe empty
         compensatedStages shouldBe empty
       }

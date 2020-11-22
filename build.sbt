@@ -1,5 +1,16 @@
 import sbtrelease.ReleaseStateTransformations._
 
+lazy val scala212               = "2.12.12"
+lazy val scala213               = "2.13.3"
+lazy val supportedScalaVersions = List(scala212, scala213)
+
+val catsVersion       = "2.2.0"
+val catsEffectVersion = "2.2.0"
+val circeVersion      = "0.13.0"
+val derevoVersion     = "0.11.5"
+val shapelessVersion  = "2.3.3"
+val scalatestVersion  = "3.2.1"
+
 lazy val `fasti` = (project in file("."))
   .settings(commonSettings: _*)
   .settings(
@@ -13,18 +24,18 @@ lazy val `example` = (project in file("example"))
   .settings(commonSettings: _*)
   .settings(
     libraryDependencies ++= Seq(
-      "io.circe" %% "circe-core" % "0.11.1",
-      "io.circe" %% "circe-generic" % "0.11.1",
-      "org.typelevel" %% "cats-effect" % "1.3.1"
+      "io.circe"      %% "circe-core"            % circeVersion,
+      "org.manatki"   %% "derevo-circe-magnolia" % derevoVersion,
+      "org.typelevel" %% "cats-effect"           % catsEffectVersion
     ),
-    skip in publish := true,
-    addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full)
+    skip in publish := true
   )
   .dependsOn(`fasti`)
 
 def commonSettings = Seq(
   organization := "ru.dokwork",
-  scalaVersion := "2.12.8",
+  scalaVersion := scala213,
+  crossScalaVersions := supportedScalaVersions,
   scalacOptions ++= Seq(
     "-encoding",
     "utf-8",
@@ -32,22 +43,19 @@ def commonSettings = Seq(
     "-deprecation",
     "-feature",
     "-unchecked",
-    "-Xexperimental",
     "-Xlint",
-    "-Ywarn-adapted-args",
     "-Ywarn-dead-code",
-    "-Ywarn-inaccessible",
-    "-Ywarn-nullary-override",
     "-Ywarn-unused",
     "-Xfatal-warnings",
-    "-language:higherKinds"
+    "-language:higherKinds",
+    "-Ymacro-annotations"
   ),
-  addCompilerPlugin("org.typelevel" %% "kind-projector" % "0.10.0"),
+  addCompilerPlugin("org.typelevel" % "kind-projector" % "0.11.0" cross CrossVersion.full),
   libraryDependencies ++= Seq(
-    "org.typelevel" %% "cats-core" % "1.5.0",
-    "com.chuusai" %% "shapeless" % "2.3.3",
+    "org.typelevel" %% "cats-core" % catsVersion,
+    "com.chuusai"   %% "shapeless" % shapelessVersion,
     // tests:
-    "org.scalatest" %% "scalatest" % "3.0.0" % "test"
+    "org.scalatest" %% "scalatest" % scalatestVersion % "test"
   )
 )
 

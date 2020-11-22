@@ -13,14 +13,14 @@ class Persistence[F[_]](store: ConcurrentHashMap[OrderId, (List[Json], Option[Th
 
   override def persist(id: OrderId, state: Json): F[Unit] =
     F.pure(store.compute(id, (_, v) => {
-      val (list, cause) = Option(v).getOrElse(List.empty → None)
-      (list :+ state) → cause
+      val (list, cause) = Option(v).getOrElse(List.empty -> None)
+      (list :+ state) -> cause
     }))
 
   override def lastCompensated(id: OrderId, cause: Throwable): F[Unit] =
     F.pure(store.computeIfPresent(id, (_, v) => {
       val (list, _) = v
-      list.tail → Some(cause)
+      list.tail -> Some(cause)
     }))
 
   override def completed(id: OrderId): F[Unit] =

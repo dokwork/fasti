@@ -10,15 +10,15 @@ trait Fixture extends ru.dokwork.fasti.Fixture {
 
   type Encoded = String
 
-  implicit def encoderB: Encoder[B, Encoded] = (x: B) => x.toString
-  implicit def encoderC: Encoder[C, Encoded] = (x: C) => x.toString
+  implicit def encoderB: Encode[B, Encoded] = (x: B) => x.toString
+  implicit def encoderC: Encode[C, Encoded] = (x: C) => x.toString
 
-  implicit def decoderB: Decoder[B, Encoded] = {
+  implicit def decoderB: Decode[B, Encoded] = {
     case "b" => Success(b)
     case x   => Failure(new IllegalArgumentException(s"$x"))
   }
 
-  implicit def decoderC: Decoder[C, Encoded] = {
+  implicit def decoderC: Decode[C, Encoded] = {
     case "c" => Success(c)
     case x   => Failure(new IllegalArgumentException(s"$x"))
   }
@@ -53,6 +53,6 @@ class TestSagaPersistence extends SagaPersistence[Try, String, Int] {
   }
 
   override def load(id: Int): Try[(NonEmptyList[String], Option[Throwable])] = Try {
-    NonEmptyList.fromListUnsafe(storage.toList) → error
+    NonEmptyList.fromListUnsafe(storage.toList) -> error
   }
 }

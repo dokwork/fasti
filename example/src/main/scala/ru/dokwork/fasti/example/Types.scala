@@ -1,18 +1,19 @@
 package ru.dokwork.fasti.example
 
-import io.circe.generic.JsonCodec
+import derevo.derive
+import derevo.circe.magnolia.{decoder, encoder}
 
-@JsonCodec
+@derive(decoder, encoder)
 case class OrderId(id: Long)
 
-@JsonCodec
+@derive(decoder, encoder)
 case class ItemCode(code: String)
 
-@JsonCodec
+@derive(decoder, encoder)
 case class CreditId(id: Long)
 
-@JsonCodec
+@derive(decoder, encoder)
 case class DeliveryId(id: Long)
 
-@JsonCodec
+@derive(decoder, encoder)
 case class Item(name: String, price: BigDecimal)

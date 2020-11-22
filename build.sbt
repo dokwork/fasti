@@ -7,6 +7,7 @@ lazy val supportedScalaVersions = List(scala212, scala213)
 val catsVersion       = "2.2.0"
 val catsEffectVersion = "2.2.0"
 val circeVersion      = "0.13.0"
+val derevoVersion     = "0.11.5"
 val shapelessVersion  = "2.3.3"
 val scalatestVersion  = "3.2.1"
 
@@ -23,9 +24,9 @@ lazy val `example` = (project in file("example"))
   .settings(commonSettings: _*)
   .settings(
     libraryDependencies ++= Seq(
-      "io.circe"      %% "circe-core"    % circeVersion,
-      "io.circe"      %% "circe-generic" % circeVersion,
-      "org.typelevel" %% "cats-effect"   % catsEffectVersion
+      "io.circe"      %% "circe-core"            % circeVersion,
+      "org.manatki"   %% "derevo-circe-magnolia" % derevoVersion,
+      "org.typelevel" %% "cats-effect"           % catsEffectVersion
     ),
     skip in publish := true
   )
@@ -46,7 +47,8 @@ def commonSettings = Seq(
     "-Ywarn-dead-code",
     "-Ywarn-unused",
     "-Xfatal-warnings",
-    "-language:higherKinds"
+    "-language:higherKinds",
+    "-Ymacro-annotations"
   ),
   addCompilerPlugin("org.typelevel" % "kind-projector" % "0.11.0" cross CrossVersion.full),
   libraryDependencies ++= Seq(

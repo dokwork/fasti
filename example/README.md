@@ -1,6 +1,6 @@
 # "Buying item" saga example
 
-## Sequence diaram of the transaction
+## Sequence diagram of the transaction
 ![sequence diagram](saga-sequence_diagram.png)
 
 ## Diagram of the saga's states

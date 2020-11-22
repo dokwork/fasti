@@ -53,12 +53,12 @@ final class CompletedPersistedSaga[F[_], A, B, S <: HList, TxId, Encoded] privat
 
 object PersistedSaga {
 
-  def apply[Id, Encoded]: Applier[Id, Encoded] = new Applier[Id, Encoded]
+  def create[Id, Encoded]: Applier[Id, Encoded] = new Applier[Id, Encoded]
 
   final class Applier[Id, Encoded] {
     def apply[F[_], A, B](action: A => F[B], compensate: (B, Throwable) => F[Unit])(getTxId: B => Id)(
         implicit F: MonadError[F, Throwable],
-        encoder: Encoder[B, Encoded],
+        encoder: Encode[B, Encoded],
         persistence: SagaPersistence[F, Encoded, Id],
     ): PersistedSaga[F, A, B, HNil, Id, Encoded] = new PersistedSaga(
       Saga(
